@@ -33,61 +33,63 @@ class BetsController < ApplicationController
             request["x-rapidapi-host"] = 'therundown-therundown-v1.p.rapidapi.com'
             request["x-rapidapi-key"] = Rails.application.credentials.dig[:API_KEY]
 
-            response = http.request(request)
-            render json: response
+            events = http.request(request)
+            events[1]["events"].each do |event|
+                fill_db(event,sport_num)
+            end
         else
             return nil
         end
     end
 
-    def fill_db(arr, sport)
+    def fill_db(event, sport)
         puts Rails.application.credentials.dig[:API_KEY]
         most_recent = arr[1]["events"][4]["line_periods"].max_by{|k,v| k}
         Bet.create!( #MONEYLINE
             category: sport.capitalize,
             line: "",
-            time: arr[1]["events"][i]["event_date"],
+            time: event["event_date"],
             text: "",
-            status: arr[1]["events"][0]["score"]["event_status"],
+            status: event["score"]["event_status"],
             kind_of_bet: "moneyline",
-            over_home_value: arr[1]["events"][4]["line_periods"][most_recent]["period_full_game"]["moneyline_away"],
-            under_away_value: arr[1]["events"][4]["line_periods"][most_recent]["period_full_game"]["moneyline"]["moneyline_away"],
-            home_team_abr: arr[1]["events"][i]["teams_normalized"][0]["abbreviation"],
-            away_team_abr: arr[1]["events"][i]["teams_normalized"][1]["abbreviation"],
-            home_team_name: arr[1]["events"][i]["teams_normalized"][0]["name"] + " " + arr[1]["events"][0]["teams_normalized"][0]["mascot"],
-            away_team_name: arr[1]["events"][i]["teams_normalized"][1]["name"] + " " + arr[1]["events"][0]["teams_normalized"][0]["mascot"],
+            over_home_value: event["line_periods"][most_recent]["period_full_game"]["moneyline_away"],
+            under_away_value: ["line_periods"][most_recent]["period_full_game"]["moneyline"]["moneyline_away"],
+            home_team_abr: event["teams_normalized"][0]["abbreviation"],
+            away_team_abr: event["teams_normalized"][1]["abbreviation"],
+            home_team_name: event["teams_normalized"][0]["name"] + " " + event[1]["events"][0]["teams_normalized"][0]["mascot"],
+            away_team_name: event["teams_normalized"][1]["name"] + " " + event[1]["events"][0]["teams_normalized"][0]["mascot"],
             home_team_spread: 0,
             away_team_spread: 0
         )
         Bet.create!( #SPREAD
             category: sport.capitalize,
             line: "",
-            time: arr[1]["events"][i]["event_date"],
+            time: event["event_date"],
             text: "",
-            status: arr[1]["events"][0]["score"]["event_status"],
+            status: event["score"]["event_status"],
             kind_of_bet: "spread",
-            over_home_value: arr[1]["events"][4]["line_periods"][most_recent]["period_full_game"]["moneyline_away"],
-            under_away_value: arr[1]["events"][4]["line_periods"][most_recent]["period_full_game"]["moneyline"]["moneyline_away"],
-            home_team_abr: arr[1]["events"][i]["teams_normalized"][0]["abbreviation"],
-            away_team_abr: arr[1]["events"][i]["teams_normalized"][1]["abbreviation"],
-            home_team_name: arr[1]["events"][i]["teams_normalized"][0]["name"] + " " + arr[1]["events"][0]["teams_normalized"][0]["mascot"],
-            away_team_name: arr[1]["events"][i]["teams_normalized"][1]["name"] + " " + arr[1]["events"][0]["teams_normalized"][0]["mascot"],
-            home_team_spread: arr[1]["events"][4]["line_periods"][most_recent]["period_full_game"]["spread"]["point_spread_home"],
-            away_team_spread: arr[1]["events"][4]["line_periods"][most_recent]["period_full_game"]["spread"]["point_spread_away"]
+            over_home_value: event["line_periods"][most_recent]["period_full_game"]["moneyline_away"],
+            under_away_value: event["line_periods"][most_recent]["period_full_game"]["moneyline"]["moneyline_away"],
+            home_team_abr: event["teams_normalized"][0]["abbreviation"],
+            away_team_abr: event["teams_normalized"][1]["abbreviation"],
+            home_team_name: event["teams_normalized"][0]["name"] + " " + event[1]["events"][0]["teams_normalized"][0]["mascot"],
+            away_team_name: event["teams_normalized"][1]["name"] + " " + event[1]["events"][0]["teams_normalized"][0]["mascot"],
+            home_team_spread: event["line_periods"][most_recent]["period_full_game"]["spread"]["point_spread_home"],
+            away_team_spread: event["line_periods"][most_recent]["period_full_game"]["spread"]["point_spread_away"]
         )
         Bet.create!( #TOTAL
             category: sport.capitalize,
             line: "",
-            time: arr[1]["events"][i]["event_date"],
+            time: event["event_date"],
             text: "",
-            status: arr[1]["events"][0]["score"]["event_status"],
+            status: event["score"]["event_status"],
             kind_of_bet: "total",
-            over_home_value: arr[1]["events"][4]["line_periods"][most_recent]["period_full_game"]["moneyline_away"],
-            under_away_value: arr[1]["events"][4]["line_periods"][most_recent]["period_full_game"]["moneyline"]["moneyline_away"],
-            home_team_abr: arr[1]["events"][i]["teams_normalized"][0]["abbreviation"],
-            away_team_abr: arr[1]["events"][i]["teams_normalized"][1]["abbreviation"],
-            home_team_name: arr[1]["events"][i]["teams_normalized"][0]["name"] + " " + arr[1]["events"][0]["teams_normalized"][0]["mascot"],
-            away_team_name: arr[1]["events"][i]["teams_normalized"][1]["name"] + " " + arr[1]["events"][0]["teams_normalized"][0]["mascot"],
+            over_home_value: event["line_periods"][most_recent]["period_full_game"]["moneyline_away"],
+            under_away_value: event["line_periods"][most_recent]["period_full_game"]["moneyline"]["moneyline_away"],
+            home_team_abr: event["teams_normalized"][0]["abbreviation"],
+            away_team_abr: event["teams_normalized"][1]["abbreviation"],
+            home_team_name: event["teams_normalized"][0]["name"] + " " + event[1]["events"][0]["teams_normalized"][0]["mascot"],
+            away_team_name: event["teams_normalized"][1]["name"] + " " + event[1]["events"][0]["teams_normalized"][0]["mascot"],
             home_team_spread: 0,
             away_team_spread: 0
         )
@@ -99,9 +101,9 @@ class BetsController < ApplicationController
 =begin
     #change sport in fetch after sports/ 1-NCAAF,2-NFL, 3-MLB, 4-NBA, 5-NCAAM, 6-NHL
     arr[1]["events"].each do |event| # to get from fetch to individual event
-    arr[1]["events"][i]["event_date"] # event start date
-    arr[1]["events"][i]["teams_normalized"][0].abbreviation # team 1 ABR 
-    arr[1]["events"][i]["teams_normalized"][1].abbreviation # team 2 ABR 
+    arr["event_date"] # event start date
+    arr["teams_normalized"][0].abbreviation # team 1 ABR 
+    arr["teams_normalized"][1].abbreviation # team 2 ABR 
     arr[1]["events"][0]["score"]["event_status"] # event status
 =end
 
