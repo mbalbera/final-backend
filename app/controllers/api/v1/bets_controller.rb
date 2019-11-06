@@ -4,20 +4,21 @@ require 'uri'
 require 'net/http'
 require 'openssl'
 
-class BetsController < ApplicationController
-    def fetch_by_sport(sport)
-        case sport.lowercase
-        when "ncaaf"
+class Api::V1::BetsController < ApplicationController
+
+    def fetch_by_sport
+        case params[:sport].lowercase
+        when "ncaaf" || 1
             sport_num = 1
-        when "nfl"
+        when "nfl" || 2
             sport_num = 2
-        when "mlb"
+        when "mlb" || 3
             sport_num = 3
-        when "nba"
+        when "nba" || 4
             sport_num = 4
-        when "ncaam"
+        when "ncaam" || 5
             sport_num = 5
-        when "nhl"
+        when "nhl" || 6
             sport_num = 6
         else
             puts "invalid sport"
