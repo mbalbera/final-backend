@@ -3,11 +3,12 @@ require 'base64'
 require 'uri'
 require 'net/http'
 require 'openssl'
+require 'json'
 
 class Api::V1::BetsController < ApplicationController
 
     def fetch_by_sport
-        case params[:sport].lowercase
+        case params[:sport]
         when "ncaaf" || 1
             sport_num = 1
         when "nfl" || 2
@@ -24,7 +25,7 @@ class Api::V1::BetsController < ApplicationController
             puts "invalid sport"
         end
 
-        if sport_num > 0 && sport_num < 7
+        if sport_num && (sport_num > 0 && sport_num < 7)
             url = URI("https://therundown-therundown-v1.p.rapidapi.com/sports/#{sport_num}/events?include=all_periods&include=scores")
             http = Net::HTTP.new(url.host, url.port)
             http.use_ssl = true
@@ -32,10 +33,12 @@ class Api::V1::BetsController < ApplicationController
 
             request = Net::HTTP::Get.new(url)
             request["x-rapidapi-host"] = 'therundown-therundown-v1.p.rapidapi.com'
-            request["x-rapidapi-key"] = Rails.application.credentials.dig[:API_KEY]
+            request["x-rapidapi-key"] = Rails.application.credentials.dig(:API_KEY)
+            puts Rails.application.credentials.dig(:API_KEY)
 
             events = http.request(request)
-            events[1]["events"].each do |event|
+            parsed_events =JSON[events.read_body]
+            parsed_events["events"].each do |event|
                 fill_db(event,sport_num)
             end
         else
@@ -44,55 +47,58 @@ class Api::V1::BetsController < ApplicationController
     end
 
     def fill_db(event, sport)
-        puts Rails.application.credentials.dig[:API_KEY]
-        most_recent = arr[1]["events"][4]["line_periods"].max_by{|k,v| k}
+        most_recent = event["line_periods"].keys.map{|k| k.to_i}.max.to_s
+        debugger
         Bet.create!( #MONEYLINE
-            category: sport.capitalize,
+            event_id: event["event_id"],
+            category: sport,
             line: "",
             time: event["event_date"],
             text: "",
             status: event["score"]["event_status"],
             kind_of_bet: "moneyline",
-            over_home_value: event["line_periods"][most_recent]["period_full_game"]["moneyline_away"],
-            under_away_value: ["line_periods"][most_recent]["period_full_game"]["moneyline"]["moneyline_away"],
+            over_home_value: event["line_periods"][most_recent]["period_full_game"]["moneyline"]["moneyline_home"],
+            under_away_value: event["line_periods"][most_recent]["period_full_game"]["moneyline"]["moneyline_away"],
             home_team_abr: event["teams_normalized"][0]["abbreviation"],
             away_team_abr: event["teams_normalized"][1]["abbreviation"],
-            home_team_name: event["teams_normalized"][0]["name"] + " " + event[1]["events"][0]["teams_normalized"][0]["mascot"],
-            away_team_name: event["teams_normalized"][1]["name"] + " " + event[1]["events"][0]["teams_normalized"][0]["mascot"],
+            home_team_name: event["teams_normalized"][0]["name"] + " " + event["teams_normalized"][0]["mascot"],
+            away_team_name: event["teams_normalized"][1]["name"] + " " + event["teams_normalized"][0]["mascot"],
             home_team_spread: 0,
             away_team_spread: 0
         )
         Bet.create!( #SPREAD
-            category: sport.capitalize,
+            event_id: event["event_id"],
+            category: sport,
             line: "",
             time: event["event_date"],
             text: "",
             status: event["score"]["event_status"],
             kind_of_bet: "spread",
-            over_home_value: event["line_periods"][most_recent]["period_full_game"]["moneyline_away"],
-            under_away_value: event["line_periods"][most_recent]["period_full_game"]["moneyline"]["moneyline_away"],
+            over_home_value: event["line_periods"][most_recent]["period_full_game"]["spread"]["point_spread_home_money"],
+            under_away_value: event["line_periods"][most_recent]["period_full_game"]["spread"]["point_spread_away_money"],
             home_team_abr: event["teams_normalized"][0]["abbreviation"],
             away_team_abr: event["teams_normalized"][1]["abbreviation"],
-            home_team_name: event["teams_normalized"][0]["name"] + " " + event[1]["events"][0]["teams_normalized"][0]["mascot"],
-            away_team_name: event["teams_normalized"][1]["name"] + " " + event[1]["events"][0]["teams_normalized"][0]["mascot"],
+            home_team_name: event["teams_normalized"][0]["name"] + " " + event["teams_normalized"][0]["mascot"],
+            away_team_name: event["teams_normalized"][1]["name"] + " " + event["teams_normalized"][0]["mascot"],
             home_team_spread: event["line_periods"][most_recent]["period_full_game"]["spread"]["point_spread_home"],
             away_team_spread: event["line_periods"][most_recent]["period_full_game"]["spread"]["point_spread_away"]
         )
         Bet.create!( #TOTAL
-            category: sport.capitalize,
+            event_id: event["event_id"],
+            category: sport,
             line: "",
             time: event["event_date"],
             text: "",
             status: event["score"]["event_status"],
             kind_of_bet: "total",
-            over_home_value: event["line_periods"][most_recent]["period_full_game"]["moneyline_away"],
-            under_away_value: event["line_periods"][most_recent]["period_full_game"]["moneyline"]["moneyline_away"],
+            over_home_value: event["line_periods"][most_recent]["period_full_game"]["total"]["total_over_money"],
+            under_away_value: event["line_periods"][most_recent]["period_full_game"]["total"]["total_under_money"],
             home_team_abr: event["teams_normalized"][0]["abbreviation"],
             away_team_abr: event["teams_normalized"][1]["abbreviation"],
-            home_team_name: event["teams_normalized"][0]["name"] + " " + event[1]["events"][0]["teams_normalized"][0]["mascot"],
-            away_team_name: event["teams_normalized"][1]["name"] + " " + event[1]["events"][0]["teams_normalized"][0]["mascot"],
-            home_team_spread: 0,
-            away_team_spread: 0
+            home_team_name: event["teams_normalized"][0]["name"] + " " + event["teams_normalized"][0]["mascot"],
+            away_team_name: event["teams_normalized"][1]["name"] + " " + event["teams_normalized"][0]["mascot"],
+            home_team_spread: event["line_periods"][most_recent]["period_full_game"]["total"]["total_over"],
+            away_team_spread: event["line_periods"][most_recent]["period_full_game"]["total"]["total_over"]
         )
 
     end
