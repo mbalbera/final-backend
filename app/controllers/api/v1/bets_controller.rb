@@ -7,6 +7,29 @@ require 'json'
 
 class Api::V1::BetsController < ApplicationController
 
+
+    def index
+        case params[:sport]
+        when "ncaaf" || 1
+            sport_num = 1
+        when "nfl" || 2
+            sport_num = 2
+        when "mlb" || 3
+            sport_num = 3
+        when "nba" || 4
+            sport_num = 4
+        when "ncaam" || 5
+            sport_num = 5
+        when "nhl" || 6
+            sport_num = 6
+        else
+            puts "invalid sport"
+        end
+        bets = Bet.all.shuffle
+        # .select{|bet|bet.category == sport_num}
+        render json: bets
+    end
+
     def fetch_by_sport
         case params[:sport]
         when "ncaaf" || 1
@@ -48,7 +71,7 @@ class Api::V1::BetsController < ApplicationController
 
     def fill_db(event, sport)
         most_recent = event["line_periods"].keys.map{|k| k.to_i}.max.to_s
-        debugger
+        # debugger
         Bet.create!( #MONEYLINE
             event_id: event["event_id"],
             category: sport,
@@ -62,7 +85,7 @@ class Api::V1::BetsController < ApplicationController
             home_team_abr: event["teams_normalized"][0]["abbreviation"],
             away_team_abr: event["teams_normalized"][1]["abbreviation"],
             home_team_name: event["teams_normalized"][0]["name"] + " " + event["teams_normalized"][0]["mascot"],
-            away_team_name: event["teams_normalized"][1]["name"] + " " + event["teams_normalized"][0]["mascot"],
+            away_team_name: event["teams_normalized"][1]["name"] + " " + event["teams_normalized"][1]["mascot"],
             home_team_spread: 0,
             away_team_spread: 0
         )
@@ -79,7 +102,7 @@ class Api::V1::BetsController < ApplicationController
             home_team_abr: event["teams_normalized"][0]["abbreviation"],
             away_team_abr: event["teams_normalized"][1]["abbreviation"],
             home_team_name: event["teams_normalized"][0]["name"] + " " + event["teams_normalized"][0]["mascot"],
-            away_team_name: event["teams_normalized"][1]["name"] + " " + event["teams_normalized"][0]["mascot"],
+            away_team_name: event["teams_normalized"][1]["name"] + " " + event["teams_normalized"][1]["mascot"],
             home_team_spread: event["line_periods"][most_recent]["period_full_game"]["spread"]["point_spread_home"],
             away_team_spread: event["line_periods"][most_recent]["period_full_game"]["spread"]["point_spread_away"]
         )
@@ -96,7 +119,7 @@ class Api::V1::BetsController < ApplicationController
             home_team_abr: event["teams_normalized"][0]["abbreviation"],
             away_team_abr: event["teams_normalized"][1]["abbreviation"],
             home_team_name: event["teams_normalized"][0]["name"] + " " + event["teams_normalized"][0]["mascot"],
-            away_team_name: event["teams_normalized"][1]["name"] + " " + event["teams_normalized"][0]["mascot"],
+            away_team_name: event["teams_normalized"][1]["name"] + " " + event["teams_normalized"][1]["mascot"],
             home_team_spread: event["line_periods"][most_recent]["period_full_game"]["total"]["total_over"],
             away_team_spread: event["line_periods"][most_recent]["period_full_game"]["total"]["total_over"]
         )
