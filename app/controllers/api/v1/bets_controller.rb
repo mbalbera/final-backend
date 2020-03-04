@@ -9,6 +9,7 @@ class Api::V1::BetsController < ApplicationController
 
 
     def index
+        puts "params[:sport] #{params[:sport]}"
         case params[:sport]
         when "ncaaf" || 1
             sport_num = 1
@@ -25,8 +26,10 @@ class Api::V1::BetsController < ApplicationController
         else
             puts "invalid sport"
         end
-        bets = Bet.all.shuffle
-        # .select{|bet|bet.category == sport_num}
+         puts "sportnum #{sport_num}"
+        #  puts Bet.all.select{|b|b.category == sport_num.to_s}[18..20].map{|game| [game.home_team_abr, game.away_team_abr]}
+        bets = Bet.all.select{|b|b.category == sport_num.to_s && (b.over_home_value!= 0 ||b.under_away_value != 0)}.shuffle
+        # bets = Bet.all.select{|b|b.category == sport_num.to_s}.map{|a|[a.home_team_name, a.home_team_abr, a.away_team_name, a.away_team_abr]}.uniq
         render json: bets
     end
 
@@ -44,6 +47,14 @@ class Api::V1::BetsController < ApplicationController
             sport_num = 5
         when "nhl" || 6
             sport_num = 6
+        when "ufc" || 7
+            sport_num = 7
+        when "wnba" || 8
+            sport_num = 8
+        when "cfl" || 9
+            sport_num = 9
+        when "mls" ||10
+            sport_num =10
         else
             puts "invalid sport"
         end
@@ -72,6 +83,8 @@ class Api::V1::BetsController < ApplicationController
     def fill_db(event, sport)
         most_recent = event["line_periods"].keys.map{|k| k.to_i}.max.to_s
         # debugger
+        puts event["event_id"]
+        puts [event["teams_normalized"][0]["abbreviation"],event["teams_normalized"][1]["abbreviation"]]
         Bet.create!( #MONEYLINE
             event_id: event["event_id"],
             category: sport,
@@ -123,7 +136,7 @@ class Api::V1::BetsController < ApplicationController
             home_team_spread: event["line_periods"][most_recent]["period_full_game"]["total"]["total_over"],
             away_team_spread: event["line_periods"][most_recent]["period_full_game"]["total"]["total_over"]
         )
-
+        
     end
 
 

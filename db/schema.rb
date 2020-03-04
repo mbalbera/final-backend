@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2019_11_06_201425) do
+ActiveRecord::Schema.define(version: 2019_11_27_195316) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -30,7 +30,7 @@ ActiveRecord::Schema.define(version: 2019_11_06_201425) do
     t.string "away_team_name"
     t.string "home_team_spread"
     t.string "away_team_spread"
-    t.integer "event_id"
+    t.bigint "event_id"
   end
 
   create_table "user_bets", force: :cascade do |t|
