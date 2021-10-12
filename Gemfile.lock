@@ -103,7 +103,8 @@ GEM
     openssl (2.1.2)
       ipaddr
     pg (1.2.3)
-    puma (3.12.4)
+    puma (4.3.9)
+      nio4r (~> 2.0)
     rack (2.2.2)
     rack-cors (1.1.1)
       rack (>= 2.0.0)
@@ -179,7 +180,7 @@ DEPENDENCIES
   listen (>= 3.0.5, < 3.2)
   openssl
   pg (>= 0.18, < 2.0)
-  puma (~> 3.11)
+  puma (~> 4.3)
   rack-cors
   rails (~> 6.0.0)
   rest-client
